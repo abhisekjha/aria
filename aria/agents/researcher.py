@@ -1,25 +1,15 @@
 import json
 from pathlib import Path
 from typing import List
-import anthropic
 
 from aria.state import AriaState, Prospect
 from aria.tools.web_search import web_search, web_fetch
-from aria.config import Config
+from aria.utils.llm import call_llm
 from aria.utils.logger import get_logger, log_agent_start, log_agent_end
-from aria.utils.rate_limiter import anthropic_limiter
 
 logger = get_logger(__name__)
 
 PROMPT_PATH = Path(__file__).parent.parent / "prompts" / "research.txt"
-_client: anthropic.Anthropic = None
-
-
-def _get_client() -> anthropic.Anthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-    return _client
 
 
 def run(state: AriaState) -> AriaState:
@@ -97,15 +87,7 @@ def _enrich(prospect: Prospect) -> Prospect:
         context=context,
     )
 
-    anthropic_limiter.wait()
-    client = _get_client()
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=512,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    raw = response.content[0].text.strip()
+    raw = call_llm(prompt, tier="fast", max_tokens=512)
 
     try:
         data = json.loads(raw)

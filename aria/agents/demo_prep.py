@@ -1,21 +1,12 @@
 from datetime import datetime
-import anthropic
 
 from aria.tools.airtable import get_prospect_by_email
 from aria.tools.gmail import send_alert
 from aria.config import Config
+from aria.utils.llm import call_llm
 from aria.utils.logger import get_logger
-from aria.utils.rate_limiter import anthropic_limiter
 
 logger = get_logger(__name__)
-_client: anthropic.Anthropic = None
-
-
-def _get_client() -> anthropic.Anthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-    return _client
 
 
 def run(attendee_email: str, meeting_datetime: str) -> None:
@@ -94,14 +85,7 @@ Do NOT mention Scenario Lab, ICC, or Outreach on this call.]
 
 Keep it tight. You're reading this 60 minutes before the meeting."""
 
-    anthropic_limiter.wait()
-    response = _get_client().messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=800,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    return response.content[0].text.strip()
+    return call_llm(prompt, tier="quality", max_tokens=800)
 
 
 def _format_time(dt_str: str) -> str:

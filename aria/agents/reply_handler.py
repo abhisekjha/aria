@@ -1,23 +1,14 @@
 import json
 from datetime import datetime, timedelta
-import anthropic
 
 from aria.state import Prospect
 from aria.tools.gmail import get_new_replies, send_alert, send_email
 from aria.tools.airtable import get_prospect_by_email, update_prospect, log_activity
 from aria.config import Config
+from aria.utils.llm import call_llm
 from aria.utils.logger import get_logger
-from aria.utils.rate_limiter import anthropic_limiter
 
 logger = get_logger(__name__)
-_client: anthropic.Anthropic = None
-
-
-def _get_client() -> anthropic.Anthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-    return _client
 
 
 def run() -> None:
@@ -195,15 +186,8 @@ Email:
 
 Return ONLY JSON: {{"classification": "...", "notes": "...", "extracted_info": "..."}}"""
 
-    anthropic_limiter.wait()
-    response = _get_client().messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=150,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
     try:
-        return json.loads(response.content[0].text.strip())
+        return json.loads(call_llm(prompt, tier="fast", max_tokens=150))
     except Exception:
         return {"classification": "OTHER", "notes": "Could not parse", "extracted_info": ""}
 
@@ -220,11 +204,4 @@ Their email:
 
 Rules: Under 80 words. Warm but not salesy. Suggest a quick call. Include booking link naturally."""
 
-    anthropic_limiter.wait()
-    response = _get_client().messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=200,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    return response.content[0].text.strip()
+    return call_llm(prompt, tier="quality", max_tokens=200)

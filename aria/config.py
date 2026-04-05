@@ -9,8 +9,14 @@ class ConfigError(Exception):
 
 
 class Config:
-    # Claude API
+    # LLM provider — "anthropic" or "openai" (auto-detected if not set)
+    LLM_PROVIDER: str = os.getenv("LLM_PROVIDER", "")
+
+    # Anthropic (Claude)
     ANTHROPIC_API_KEY: str = os.getenv("ANTHROPIC_API_KEY", "")
+
+    # OpenAI (GPT)
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 
     # Apollo.io
     APOLLO_API_KEY: str = os.getenv("APOLLO_API_KEY", "")
@@ -41,7 +47,7 @@ class Config:
 
     # Required vars for full pipeline run
     REQUIRED_FOR_PIPELINE = [
-        "ANTHROPIC_API_KEY",
+        "ANTHROPIC_API_KEY",  # or OPENAI_API_KEY — one must be set
         "APOLLO_API_KEY",
         "GMAIL_ADDRESS",
         "GMAIL_APP_PASSWORD",

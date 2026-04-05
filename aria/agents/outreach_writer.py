@@ -1,22 +1,13 @@
 from pathlib import Path
-import anthropic
 
 from aria.state import AriaState, Prospect
 from aria.config import Config
+from aria.utils.llm import call_llm
 from aria.utils.logger import get_logger, log_agent_start, log_agent_end
-from aria.utils.rate_limiter import anthropic_limiter
 
 logger = get_logger(__name__)
 
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
-_client: anthropic.Anthropic = None
-
-
-def _get_client() -> anthropic.Anthropic:
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic(api_key=Config.ANTHROPIC_API_KEY)
-    return _client
 
 
 def run(state: AriaState) -> AriaState:
@@ -69,14 +60,7 @@ SUBJECT: <subject line>
 BODY:
 <email body>"""
 
-    anthropic_limiter.wait()
-    response = _get_client().messages.create(
-        model="claude-sonnet-4-6",
-        max_tokens=400,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    raw = response.content[0].text.strip()
+    raw = call_llm(prompt, tier="quality", max_tokens=400)
 
     # Parse subject and body
     subject = ""
