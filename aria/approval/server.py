@@ -1,13 +1,15 @@
 """
-FastAPI webhook server — runs 24/7 on Railway free tier.
-Handles: approval taps, Cal.com webhooks, reply send confirmations.
+FastAPI webhook server — runs 24/7 on Railway/Vercel.
+Handles: approval taps, Cal.com webhooks, reply send confirmations, JSON API for Next.js UI.
 """
 import json
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.middleware.cors import CORSMiddleware
 
 from aria.approval.tokens import validate_token
 from aria.ui.routes import router as ui_router
+from aria.api.v1.routes import router as api_router
 from aria.tools.airtable import update_prospect, log_activity, get_prospect_by_email
 from aria.tools.gmail import send_email
 from aria.tools.cal_com import verify_webhook_signature, handle_booking_created, handle_booking_cancelled
@@ -18,7 +20,23 @@ from aria.utils.logger import get_logger, log_approval
 logger = get_logger(__name__)
 
 app = FastAPI(title="Aria Webhook Server")
+
+# CORS — allow Next.js UI (any vercel.app subdomain + localhost)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://*.vercel.app",
+        Config.NEXTJS_URL or "",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(ui_router)
+app.include_router(api_router)
 
 
 @app.get("/")

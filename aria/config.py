@@ -41,6 +41,9 @@ class Config:
     # Cal.com
     CAL_COM_WEBHOOK_SECRET: str = os.getenv("CAL_COM_WEBHOOK_SECRET", "")
 
+    # Next.js UI URL (for CORS)
+    NEXTJS_URL: str = os.getenv("NEXTJS_URL", "")
+
     # Safety controls
     DRY_RUN: bool = os.getenv("DRY_RUN", "true").lower() == "true"
     MAX_PROSPECTS_PER_DAY: int = int(os.getenv("MAX_PROSPECTS_PER_DAY", "10"))
