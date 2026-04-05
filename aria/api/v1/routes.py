@@ -5,7 +5,6 @@ All routes return JSON. Mounted at /api/v1.
 import os
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, Form
-from fastapi.responses import JSONResponse
 
 from aria.config import Config
 from aria.tools.airtable import _get_table, update_prospect, log_activity
@@ -222,48 +221,52 @@ async def toggle_dry_run():
     return {"dry_run": Config.DRY_RUN}
 
 
-# ── triggers ──────────────────────────────────────────────────────────────────
+# ── triggers (via GitHub Actions API — works on Vercel serverless) ────────────
+
+import httpx
+
+WORKFLOW_MAP = {
+    "run": "nightly.yml",
+    "replies": "reply_monitor.yml",
+    "followups": "nightly.yml",  # followups run as part of nightly
+}
+
+
+async def _dispatch_workflow(workflow_file: str) -> dict:
+    """Trigger a GitHub Actions workflow_dispatch event."""
+    token = Config.GITHUB_TOKEN
+    repo = Config.GITHUB_REPO
+    if not token or not repo:
+        raise HTTPException(503, "GITHUB_TOKEN or GITHUB_REPO not configured")
+
+    url = f"https://api.github.com/repos/{repo}/actions/workflows/{workflow_file}/dispatches"
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            url,
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={"ref": "master"},
+            timeout=10,
+        )
+    if resp.status_code == 204:
+        return {"ok": True, "message": f"Triggered {workflow_file}"}
+    logger.error(f"[API] GitHub dispatch failed: {resp.status_code} {resp.text}")
+    raise HTTPException(502, f"GitHub API returned {resp.status_code}")
+
 
 @router.post("/trigger-run")
 async def trigger_run():
-    import threading
-    from aria.graph import main as run_pipeline
-
-    def _run():
-        try:
-            run_pipeline()
-        except Exception as e:
-            logger.error(f"[API] Manual pipeline run failed: {e}")
-
-    threading.Thread(target=_run, daemon=True).start()
-    return {"ok": True, "message": "Pipeline started"}
+    return await _dispatch_workflow("nightly.yml")
 
 
 @router.post("/trigger-reply-check")
 async def trigger_reply_check():
-    import threading
-    from aria.agents.reply_handler import run as check_replies
-
-    def _run():
-        try:
-            check_replies()
-        except Exception as e:
-            logger.error(f"[API] Manual reply check failed: {e}")
-
-    threading.Thread(target=_run, daemon=True).start()
-    return {"ok": True, "message": "Reply check started"}
+    return await _dispatch_workflow("reply_monitor.yml")
 
 
 @router.post("/trigger-followups")
 async def trigger_followups():
-    import threading
-    from aria.agents.follow_up import run as send_followups
-
-    def _run():
-        try:
-            send_followups()
-        except Exception as e:
-            logger.error(f"[API] Manual follow-up failed: {e}")
-
-    threading.Thread(target=_run, daemon=True).start()
-    return {"ok": True, "message": "Follow-up check started"}
+    return await _dispatch_workflow("nightly.yml")
