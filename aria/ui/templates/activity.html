@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Activity{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Activity Log</h1>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-slate-50 border-b border-slate-200">
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Time</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Action</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Prospect</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Details</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% if activity %}
+        {% for item in activity %}
+        <tr class="hover:bg-slate-50">
+          <td class="px-4 py-3 text-xs text-slate-400 whitespace-nowrap">{{ item.time_ago }}</td>
+          <td class="px-4 py-3">
+            <span class="stage-badge
+              {% if item.action == 'email_sent' %}bg-blue-100 text-blue-700
+              {% elif item.action == 'reply_received' %}bg-green-100 text-green-700
+              {% elif item.action == 'meeting_booked' %}bg-purple-100 text-purple-700
+              {% elif item.action == 'stage_changed' %}bg-orange-100 text-orange-700
+              {% else %}bg-slate-100 text-slate-600{% endif %}">
+              {{ item.action.replace('_', ' ') }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-slate-700">{{ item.prospect_name }}</td>
+          <td class="px-4 py-3 text-slate-500 text-xs">{{ item.details[:100] }}</td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="4" class="px-4 py-12 text-center text-slate-400">No activity yet.</td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

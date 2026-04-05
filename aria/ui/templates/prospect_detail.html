@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% block title %}{{ p.name }}{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+  <a href="/ui/prospects" class="text-sm text-blue-600 hover:underline">← Back to prospects</a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Left: main info -->
+  <div class="lg:col-span-2 space-y-4">
+
+    <!-- Header card -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <div class="flex items-start justify-between">
+        <div>
+          <h1 class="text-xl font-bold text-slate-900">{{ p.name }}</h1>
+          <p class="text-slate-500 text-sm mt-0.5">{{ p.title }} · {{ p.company }}</p>
+          {% if p.linkedin_url %}
+          <a href="{{ p.linkedin_url }}" target="_blank" class="text-xs text-blue-600 hover:underline mt-1 inline-block">
+            LinkedIn →
+          </a>
+          {% endif %}
+        </div>
+        <div class="text-right">
+          <div class="text-3xl font-bold {% if p.score >= 70 %}text-green-600{% elif p.score >= 40 %}text-orange-500{% else %}text-slate-400{% endif %}">
+            {{ p.score }}
+          </div>
+          <div class="text-xs text-slate-400">score</div>
+          <span class="mt-1 inline-block stage-badge status-{{ p.tier }}">{{ p.tier }}</span>
+        </div>
+      </div>
+
+      <div class="mt-4 grid grid-cols-3 gap-3 text-sm">
+        <div><span class="text-slate-400 text-xs">Revenue</span><br><strong>{{ p.revenue }}</strong></div>
+        <div><span class="text-slate-400 text-xs">Stage</span><br>
+          <span class="stage-badge
+            {% if p.deal_stage == 'demo_booked' %}bg-purple-100 text-purple-700
+            {% elif p.deal_stage == 'replied' %}bg-green-100 text-green-700
+            {% elif p.deal_stage == 'contacted' %}bg-blue-100 text-blue-700
+            {% elif p.deal_stage == 'closed_won' %}bg-emerald-100 text-emerald-700
+            {% else %}bg-slate-100 text-slate-500{% endif %}">
+            {{ p.deal_stage.replace('_',' ') }}
+          </span>
+        </div>
+        <div><span class="text-slate-400 text-xs">Email</span><br>
+          <span class="text-xs break-all">{{ p.email }}</span>
+        </div>
+      </div>
+
+      <div class="mt-3 flex flex-wrap gap-1.5">
+        {% for r in p.retailers %}
+        <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full">{{ r }}</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Research summary -->
+    {% if p.research_summary %}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="font-semibold text-slate-800 mb-2 text-sm">Research Summary</h2>
+      <p class="text-sm text-slate-600 leading-relaxed">{{ p.research_summary }}</p>
+      {% if p.pain_angle %}
+      <div class="mt-3 bg-amber-50 border border-amber-200 rounded-lg p-3">
+        <span class="text-xs font-semibold text-amber-700">Pain Angle</span>
+        <p class="text-sm text-amber-800 mt-0.5">{{ p.pain_angle }}</p>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Outreach email -->
+    {% if p.email_body %}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="font-semibold text-slate-800 mb-2 text-sm">Outreach Email Sent</h2>
+      <div class="text-xs text-slate-400 mb-2">Subject: {{ p.email_subject }}</div>
+      <pre class="text-sm text-slate-600 whitespace-pre-wrap font-sans leading-relaxed bg-slate-50 rounded-lg p-3">{{ p.email_body }}</pre>
+    </div>
+    {% endif %}
+
+    <!-- LinkedIn content -->
+    {% if p.linkedin_connection_msg %}
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="font-semibold text-slate-800 mb-3 text-sm">LinkedIn Content</h2>
+      <div class="mb-3">
+        <div class="text-xs font-medium text-slate-500 mb-1">Connection Request</div>
+        <div class="bg-slate-50 rounded-lg p-3 text-sm text-slate-600">{{ p.linkedin_connection_msg }}</div>
+      </div>
+      {% if p.linkedin_dm %}
+      <div>
+        <div class="text-xs font-medium text-slate-500 mb-1">First DM (after accepting)</div>
+        <pre class="bg-slate-50 rounded-lg p-3 text-sm text-slate-600 whitespace-pre-wrap font-sans">{{ p.linkedin_dm }}</pre>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+
+  </div>
+
+  <!-- Right: status + notes -->
+  <div class="space-y-4">
+
+    <!-- Status checklist -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="font-semibold text-slate-800 mb-3 text-sm">Outreach Status</h2>
+      {% set checks = [
+        ('Outreach Sent', p.outreach_sent),
+        ('Follow-up 1', p.follow_up_1_sent),
+        ('Follow-up 2', p.follow_up_2_sent),
+        ('Breakup Sent', p.breakup_sent),
+        ('Reply Received', p.reply_received),
+        ('Meeting Booked', p.meeting_booked),
+      ] %}
+      {% for label, done in checks %}
+      <div class="flex items-center gap-2 py-1.5">
+        <span class="{% if done %}text-green-500{% else %}text-slate-300{% endif %}">
+          {% if done %}✓{% else %}○{% endif %}
+        </span>
+        <span class="text-sm {% if done %}text-slate-800{% else %}text-slate-400{% endif %}">{{ label }}</span>
+      </div>
+      {% endfor %}
+
+      {% if p.reply_classification %}
+      <div class="mt-3 pt-3 border-t border-slate-100">
+        <div class="text-xs text-slate-400">Reply Classification</div>
+        <div class="text-sm font-medium text-slate-700 mt-0.5">{{ p.reply_classification }}</div>
+      </div>
+      {% endif %}
+
+      {% if p.meeting_datetime %}
+      <div class="mt-3 pt-3 border-t border-slate-100">
+        <div class="text-xs text-slate-400">Demo Date</div>
+        <div class="text-sm font-medium text-slate-700 mt-0.5">{{ p.meeting_datetime }}</div>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Update stage -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="font-semibold text-slate-800 mb-3 text-sm">Update Stage</h2>
+      <form action="/ui/prospects/{{ p.airtable_id }}/update-stage" method="post" class="space-y-2">
+        <select name="stage" class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 bg-white">
+          {% for s in stages %}
+          <option value="{{ s }}" {% if s == p.deal_stage %}selected{% endif %}>{{ s.replace('_',' ').title() }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="w-full bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-700 transition">
+          Update
+        </button>
+      </form>
+    </div>
+
+    <!-- Notes -->
+    <div class="bg-white rounded-xl border border-slate-200 p-5">
+      <h2 class="font-semibold text-slate-800 mb-2 text-sm">Notes</h2>
+      <form action="/ui/prospects/{{ p.airtable_id }}/add-note" method="post">
+        <textarea name="note" rows="3"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-slate-400"
+          placeholder="Add a note..."></textarea>
+        <button type="submit" class="mt-2 w-full bg-slate-100 text-slate-700 text-sm py-1.5 rounded-lg hover:bg-slate-200 transition">
+          Add Note
+        </button>
+      </form>
+      {% if p.notes %}
+      <div class="mt-3 pt-3 border-t border-slate-100 text-xs text-slate-500 whitespace-pre-wrap">{{ p.notes }}</div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+{% endblock %}

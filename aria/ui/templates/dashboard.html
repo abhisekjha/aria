@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <div>
+    <h1 class="text-2xl font-bold text-slate-900">Good morning.</h1>
+    <p class="text-slate-500 text-sm mt-0.5">{{ date_str }} · Auto-refreshes every 60s</p>
+  </div>
+  <form action="/ui/trigger-run" method="post">
+    <button type="submit"
+      class="bg-slate-900 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition">
+      ▶ Run Pipeline Now
+    </button>
+  </form>
+</div>
+
+<!-- Stats row -->
+<div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+  {% for stat in stats %}
+  <div class="bg-white rounded-xl border border-slate-200 p-4">
+    <div class="text-2xl font-bold text-slate-900">{{ stat.value }}</div>
+    <div class="text-xs text-slate-500 mt-1">{{ stat.label }}</div>
+    {% if stat.sub %}
+    <div class="text-xs text-slate-400 mt-0.5">{{ stat.sub }}</div>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Two-column layout -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- Hot prospects -->
+  <div class="bg-white rounded-xl border border-slate-200">
+    <div class="px-5 py-4 border-b border-slate-100 flex items-center justify-between">
+      <h2 class="font-semibold text-slate-800">🔥 Hot Prospects</h2>
+      <a href="/ui/prospects?tier=hot" class="text-xs text-blue-600 hover:underline">View all</a>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% if hot_prospects %}
+        {% for p in hot_prospects[:5] %}
+        <div class="px-5 py-3 flex items-center justify-between">
+          <div>
+            <div class="text-sm font-medium text-slate-900">{{ p.name }}</div>
+            <div class="text-xs text-slate-500">{{ p.title }} · {{ p.company }}</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="stage-badge
+              {% if p.deal_stage == 'demo_booked' %}bg-purple-100 text-purple-700
+              {% elif p.deal_stage == 'replied' %}bg-green-100 text-green-700
+              {% elif p.deal_stage == 'contacted' %}bg-blue-100 text-blue-700
+              {% else %}bg-slate-100 text-slate-600{% endif %}">
+              {{ p.deal_stage }}
+            </span>
+            <span class="text-sm font-bold text-slate-700">{{ p.score }}</span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="px-5 py-8 text-center text-slate-400 text-sm">
+          No hot prospects yet — run the pipeline to find some.
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Recent activity -->
+  <div class="bg-white rounded-xl border border-slate-200">
+    <div class="px-5 py-4 border-b border-slate-100">
+      <h2 class="font-semibold text-slate-800">📋 Recent Activity</h2>
+    </div>
+    <div class="divide-y divide-slate-100">
+      {% if activity %}
+        {% for item in activity[:8] %}
+        <div class="px-5 py-3">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <span class="text-xs font-medium
+                {% if item.action == 'email_sent' %}text-blue-600
+                {% elif item.action == 'reply_received' %}text-green-600
+                {% elif item.action == 'meeting_booked' %}text-purple-600
+                {% else %}text-slate-600{% endif %}">
+                {{ item.action.replace('_', ' ').title() }}
+              </span>
+              <span class="text-xs text-slate-500 ml-1">· {{ item.prospect_name }}</span>
+            </div>
+            <span class="text-xs text-slate-400 flex-shrink-0">{{ item.time_ago }}</span>
+          </div>
+          {% if item.details %}
+          <div class="text-xs text-slate-400 mt-0.5 truncate">{{ item.details[:80] }}</div>
+          {% endif %}
+        </div>
+        {% endfor %}
+      {% else %}
+        <div class="px-5 py-8 text-center text-slate-400 text-sm">No activity yet.</div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<!-- Pipeline funnel -->
+<div class="mt-6 bg-white rounded-xl border border-slate-200 p-5">
+  <h2 class="font-semibold text-slate-800 mb-4">Pipeline Funnel</h2>
+  <div class="flex items-end gap-3">
+    {% for stage in funnel %}
+    <div class="flex-1 text-center">
+      <div class="text-2xl font-bold text-slate-900">{{ stage.count }}</div>
+      <div class="mt-1 rounded" style="height:{{ [stage.count * 4, 4] | max }}px; background:#1e293b; opacity:{{ [stage.count / funnel_max, 0.1] | max }}"></div>
+      <div class="text-xs text-slate-500 mt-1.5">{{ stage.label }}</div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% endblock %}

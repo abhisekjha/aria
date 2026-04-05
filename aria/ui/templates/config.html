@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Config{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold text-slate-900 mb-6">Configuration</h1>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- ICP Settings -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h2 class="font-semibold text-slate-800 mb-4">Ideal Customer Profile</h2>
+    <form action="/ui/config/save" method="post" class="space-y-4">
+      <input type="hidden" name="section" value="icp">
+
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Target Titles (comma-separated)</label>
+        <textarea name="titles" rows="3"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-slate-400">{{ config.titles }}</textarea>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Revenue Range Min</label>
+        <input type="text" name="revenue_min" value="{{ config.revenue_min }}"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400">
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Revenue Range Max</label>
+        <input type="text" name="revenue_max" value="{{ config.revenue_max }}"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400">
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-slate-500 mb-1">Max Prospects Per Day</label>
+        <input type="number" name="max_per_day" value="{{ config.max_per_day }}" min="1" max="50"
+          class="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:border-slate-400">
+      </div>
+
+      <button type="submit" class="w-full bg-slate-900 text-white text-sm py-2 rounded-lg hover:bg-slate-700 transition">
+        Save ICP Settings
+      </button>
+    </form>
+  </div>
+
+  <!-- Pipeline status -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5">
+    <h2 class="font-semibold text-slate-800 mb-4">Pipeline Controls</h2>
+
+    <div class="space-y-3">
+      <!-- Dry run toggle -->
+      <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+        <div>
+          <div class="text-sm font-medium text-slate-800">Dry Run Mode</div>
+          <div class="text-xs text-slate-500 mt-0.5">No emails sent, no Airtable writes</div>
+        </div>
+        <form action="/ui/config/toggle-dry-run" method="post">
+          <button type="submit"
+            class="text-sm px-3 py-1.5 rounded-lg font-medium transition
+              {% if dry_run %}bg-yellow-100 text-yellow-800 hover:bg-yellow-200{% else %}bg-green-100 text-green-800 hover:bg-green-200{% endif %}">
+            {% if dry_run %}ON (click to disable){% else %}OFF (click to enable){% endif %}
+          </button>
+        </form>
+      </div>
+
+      <!-- Manual triggers -->
+      <div class="p-3 bg-slate-50 rounded-lg">
+        <div class="text-sm font-medium text-slate-800 mb-2">Manual Triggers</div>
+        <div class="space-y-2">
+          <form action="/ui/trigger-run" method="post">
+            <button type="submit" class="w-full text-sm bg-slate-900 text-white py-2 rounded-lg hover:bg-slate-700 transition">
+              ▶ Run Full Pipeline Now
+            </button>
+          </form>
+          <form action="/ui/trigger-reply-check" method="post">
+            <button type="submit" class="w-full text-sm bg-white text-slate-700 border border-slate-200 py-2 rounded-lg hover:border-slate-400 transition">
+              📨 Check Inbox Now
+            </button>
+          </form>
+          <form action="/ui/trigger-followups" method="post">
+            <button type="submit" class="w-full text-sm bg-white text-slate-700 border border-slate-200 py-2 rounded-lg hover:border-slate-400 transition">
+              🔁 Send Follow-ups Now
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Env var status -->
+  <div class="bg-white rounded-xl border border-slate-200 p-5 lg:col-span-2">
+    <h2 class="font-semibold text-slate-800 mb-4">Environment Variables</h2>
+    <div class="grid grid-cols-2 lg:grid-cols-3 gap-2">
+      {% for var in env_vars %}
+      <div class="flex items-center gap-2 p-2.5 rounded-lg {% if var.set %}bg-green-50{% else %}bg-red-50{% endif %}">
+        <span class="{% if var.set %}text-green-500{% else %}text-red-400{% endif %} text-sm">
+          {% if var.set %}✓{% else %}✗{% endif %}
+        </span>
+        <div>
+          <div class="text-xs font-mono font-medium {% if var.set %}text-green-800{% else %}text-red-700{% endif %}">
+            {{ var.name }}
+          </div>
+          {% if not var.set %}
+          <div class="text-xs text-red-500">Not set</div>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <p class="text-xs text-slate-400 mt-3">
+      Set missing vars in GitHub Secrets (for Actions) and Railway environment variables (for the webhook server).
+    </p>
+  </div>
+
+</div>
+{% endblock %}

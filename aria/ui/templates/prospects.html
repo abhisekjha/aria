@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Prospects{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+  <h1 class="text-2xl font-bold text-slate-900">Prospects</h1>
+  <div class="flex gap-2">
+    {% for t in ['all', 'hot', 'warm', 'cold'] %}
+    <a href="/ui/prospects?tier={{ t }}"
+       class="px-3 py-1.5 rounded-lg text-sm font-medium border transition
+         {% if tier_filter == t %}bg-slate-900 text-white border-slate-900
+         {% else %}bg-white text-slate-600 border-slate-200 hover:border-slate-400{% endif %}">
+      {{ t.title() }}
+    </a>
+    {% endfor %}
+  </div>
+</div>
+
+<div class="bg-white rounded-xl border border-slate-200 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-slate-50 border-b border-slate-200">
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Prospect</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Company</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Retailers</th>
+        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Score</th>
+        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Tier</th>
+        <th class="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wide">Stage</th>
+        <th class="px-4 py-3 text-center text-xs font-semibold text-slate-500 uppercase tracking-wide">Signals</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-slate-100">
+      {% if prospects %}
+        {% for p in prospects %}
+        <tr class="hover:bg-slate-50 cursor-pointer" onclick="window.location='/ui/prospects/{{ p.airtable_id }}'">
+          <td class="px-4 py-3">
+            <div class="font-medium text-slate-900">{{ p.name }}</div>
+            <div class="text-xs text-slate-500">{{ p.title }}</div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="text-slate-800">{{ p.company }}</div>
+            <div class="text-xs text-slate-400">{{ p.revenue }}</div>
+          </td>
+          <td class="px-4 py-3">
+            <div class="flex flex-wrap gap-1">
+              {% for r in p.retailers[:3] %}
+              <span class="text-xs bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded">{{ r }}</span>
+              {% endfor %}
+            </div>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="font-bold {% if p.score >= 70 %}text-green-600{% elif p.score >= 40 %}text-orange-500{% else %}text-slate-400{% endif %}">
+              {{ p.score }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <span class="stage-badge status-{{ p.tier }}">{{ p.tier }}</span>
+          </td>
+          <td class="px-4 py-3">
+            <span class="stage-badge
+              {% if p.deal_stage == 'demo_booked' %}bg-purple-100 text-purple-700
+              {% elif p.deal_stage == 'demo_done' %}bg-indigo-100 text-indigo-700
+              {% elif p.deal_stage == 'replied' %}bg-green-100 text-green-700
+              {% elif p.deal_stage == 'contacted' %}bg-blue-100 text-blue-700
+              {% elif p.deal_stage == 'closed_won' %}bg-emerald-100 text-emerald-700
+              {% elif p.deal_stage == 'closed_lost' %}bg-red-100 text-red-700
+              {% else %}bg-slate-100 text-slate-500{% endif %}">
+              {{ p.deal_stage.replace('_', ' ') }}
+            </span>
+          </td>
+          <td class="px-4 py-3 text-center">
+            <div class="flex justify-center gap-1.5">
+              {% if p.job_signal %}<span title="Job posting signal">💼</span>{% endif %}
+              {% if p.reply_received %}<span title="Has replied">💬</span>{% endif %}
+              {% if p.meeting_booked %}<span title="Demo booked">📅</span>{% endif %}
+              {% if p.do_not_contact %}<span title="Do not contact">🚫</span>{% endif %}
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="7" class="px-4 py-12 text-center text-slate-400">
+            No prospects found. Run the pipeline to find some.
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<div class="mt-3 text-xs text-slate-400">{{ total }} total prospects · click row to view details</div>
+{% endblock %}
