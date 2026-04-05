@@ -21,14 +21,14 @@ logger = get_logger(__name__)
 
 app = FastAPI(title="Aria Webhook Server")
 
-# CORS — allow Next.js UI (any vercel.app subdomain + localhost)
+# CORS — allow Next.js UI and localhost dev
+_origins = ["http://localhost:3000"]
+if Config.NEXTJS_URL:
+    _origins.append(Config.NEXTJS_URL)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "https://*.vercel.app",
-        Config.NEXTJS_URL or "",
-    ],
+    allow_origins=_origins,
     allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
